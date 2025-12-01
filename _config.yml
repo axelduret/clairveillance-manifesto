@@ -50,6 +50,8 @@ exclude:
   - README.md
   - .git/
   - .gitignore
+  - LICENSE
+  - DEPLOY.md
 
 # Inclusions
 include:

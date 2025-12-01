@@ -1,7 +1,7 @@
 ---
 layout: default
 title: Licence
-permalink: /license.md/
+permalink: /docs/LICENSE.md/
 ---
 
 # Licence

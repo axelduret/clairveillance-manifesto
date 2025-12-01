@@ -65,4 +65,4 @@ _La preuve par les données : comment ces principes transforment des systèmes r
 
 ---
 
-**Licence** : Ce contenu est distribué sous [licence Creative Commons BY-SA 4.0](/license.md/)
+**Licence** : Ce contenu est distribué sous [licence Creative Commons BY-SA 4.0](/docs/LICENSE.md/)

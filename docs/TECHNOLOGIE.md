@@ -731,4 +731,4 @@ _Que nos machines nous apprennent à bâtir un monde plus lucide._
 **Version** : 1.0  
 **Statut** : Étude de cas conceptuelle
 
-**Licence** : Ce document est distribué sous [licence Creative Commons BY-SA 4.0](../license.md/)
+**Licence** : Ce document est distribué sous [licence Creative Commons BY-SA 4.0](/LICENSE.md/)

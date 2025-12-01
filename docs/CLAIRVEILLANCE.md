@@ -278,4 +278,4 @@ Mode de gouvernance ouverte, polycentrique et apprenante, qui valorise la divers
 
 ---
 
-**Licence** : Ce document est distribué sous [licence Creative Commons BY-SA 4.0](../license.md/)
+**Licence** : Ce document est distribué sous [licence Creative Commons BY-SA 4.0](/LICENSE.md/)
