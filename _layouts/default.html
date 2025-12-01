@@ -42,11 +42,21 @@
       /* Footer */
       .site-footer {
         margin-top: 3em;
-        padding-top: 2em;
+        padding: 2em 0;
         border-top: 1px solid #e0e0e0;
         text-align: center;
         color: #666;
         font-size: 0.9em;
+        position: relative;
+        clear: both;
+        width: 100vw;
+        margin-left: calc(-50vw + 50%);
+        background: #fafafa;
+      }
+      
+      /* Override theme fixed positioning */
+      .main-content {
+        position: relative !important;
       }
       
       /* Responsive */
@@ -74,6 +84,7 @@
 
     <main id="content" class="main-content" role="main">
       {{ content }}
+    </main>
 
       <footer class="site-footer">
         <p>
@@ -86,13 +97,7 @@
             CC BY-SA 4.0
           </a>
         </p>
-        <p style="font-style: italic; margin-top: 1em;">
-          Que la clarté ne serve plus à dominer, mais à relier.<br>
-          Que le doute ne soit plus une faiblesse, mais une force.<br>
-          Que la bienveillance ne soit plus une naïveté, mais une politique.
-        </p>
       </footer>
-    </main>
 
     {% if site.google_analytics %}
     <script async src="https://www.googletagmanager.com/gtag/js?id={{ site.google_analytics }}"></script>
