@@ -5,10 +5,6 @@ title: Accueil
 
 # 🌱 Clairveillance
 
-[![License: CC BY-SA 4.0](https://img.shields.io/badge/License-CC%20BY--SA%204.0-lightgrey.svg)](https://creativecommons.org/licenses/by-sa/4.0/)
-[![GitHub Pages](https://img.shields.io/badge/GitHub%20Pages-Active-success)](https://axelduret.github.io/clairveillance-manifesto/)
-[![GitHub](https://img.shields.io/badge/GitHub-Repository-blue?logo=github)](https://github.com/axelduret/clairveillance-manifesto)
-
 > **Pour une lucidité qui prend soin**
 
 ## Et si nos sociétés pouvaient apprendre de leurs erreurs ?
@@ -46,12 +42,12 @@ Ces principes ne sont pas théoriques. Ils fonctionnent déjà :
 
 ## Découvrir le Manifeste
 
-**[📜 Lire le Manifeste Complet](./docs/CLAIRVEILLANCE.md)**  
+**📜 [Lire le Manifeste Complet](./docs/CLAIRVEILLANCE.md)**  
 _Pourquoi ça marche. Comment le mettre en pratique. Pourquoi maintenant._
 
 ## Consulter les expérimentations en cours
 
-**[💻 Voir l'Étude de Cas Technique](./docs/TECHNOLOGIE.md)**  
+**💻 [Voir l'Étude de Cas Technique](./docs/TECHNOLOGIE.md)**  
 _La preuve par les données : comment ces principes transforment des systèmes réels._
 
 ## Pour Qui ?

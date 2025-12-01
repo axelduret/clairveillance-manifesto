@@ -1,4 +1,8 @@
-# Entropie, Néguentropie et Clairveillance : Comment nos machines nous apprennent à bâtir un monde plus lucide
+[![License: CC BY-SA 4.0](https://img.shields.io/badge/License-CC%20BY--SA%204.0-lightgrey.svg)](https://creativecommons.org/licenses/by-sa/4.0/)
+[![GitHub Pages](https://img.shields.io/badge/GitHub%20Pages-Active-success)](https://axelduret.github.io/clairveillance-manifesto/)
+[![GitHub](https://img.shields.io/badge/GitHub-Repository-blue?logo=github)](https://github.com/axelduret/clairveillance-manifesto)
+
+# Entropie, Néguentropie et Clairveillance: _Comment nos machines nous apprennent à bâtir un monde plus lucide_
 
 ## Introduction : Les Deux Forces de l'Univers ⚖️
 
@@ -17,8 +21,6 @@ graph LR
 > **Thèse centrale :** Les plans d'architecture que nous concevons pour rendre nos machines plus robustes face au chaos sont, en réalité, des schémas directeurs pour des sociétés plus lucides et résilientes.
 
 Pour explorer cette idée vertigineuse, nous commencerons par un exemple surprenant : les systèmes d'intelligence artificielle.
-
----
 
 ## 1. L'Analogie Centrale : La Machine Face au Chaos du Réel
 
@@ -54,8 +56,6 @@ La crise qui était une menace devient un signal, un cycle d'apprentissage qui r
 > _Comment, concrètement, une machine peut-elle apprendre à créer de l'ordre à partir du désordre ?_
 
 La réponse ne se trouve pas seulement dans la technique, mais dans une série de principes d'organisation que l'on pourrait qualifier de "pactes sociaux".
-
----
 
 ## 2. Les Principes de l'Ordre : Les Contrats Socio-Techniques 🤝
 
@@ -95,8 +95,6 @@ Cela dessine le contour d'un modèle de société basé sur l'apprentissage, l'e
 
 Construire de tels systèmes ne relève pas seulement de la technologie, mais aussi d'une posture intérieure, d'une éthique du regard. C'est ce que le manifeste de la Clairveillance propose.
 
----
-
 ## Conclusion : La Clairveillance, une Néguentropie à Visage Humain 💡
 
 La Clairveillance, néologisme issu de "clairvoyance + bienveillance", est une proposition éthique pour incarner ces principes néguentropiques à l'échelle humaine. C'est une lucidité qui prend soin. Elle est la manifestation humaine des contrats que nous venons d'explorer : "voir clair" correspond à la capture de la vérité terrain, et "prendre soin" correspond à la création d'ordre sans détruire.
@@ -113,8 +111,6 @@ graph LR
 Les principes de la Clairveillance sont l'écho philosophique de ces mécanismes. Le "Contrat Sémantique" est l'incarnation du principe "Partager la vérité". Le "Contrat de Valeur" force à "Répondre de son regard" sur l'impact de nos créations. Le "Contrat de Validité" est une invitation systémique à "Voir clair" en permanence, en refusant le dogme. Ils nous invitent à construire des systèmes (personnels, sociaux, collectifs) qui ne cherchent pas à imposer une vérité figée, mais qui apprennent à allumer la lumière ensemble.
 
 Nous appelons à une mutation douce mais radicale : celle d'une humanité capable de conscience partagée. Que la clarté ne serve plus à dominer, mais à relier.
-
----
 
 ## 📖 Pour Aller Plus Loin
 
