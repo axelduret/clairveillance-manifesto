@@ -116,7 +116,7 @@ Nous appelons à une mutation douce mais radicale : celle d'une humanité capabl
 
 Pour une exploration approfondie de ces concepts appliqués à la politique, consultez :
 
-**[Le Manifeste de la Clairveillance : Pour une Politique Néguentropique](https://axelduret.github.io/clairveillance-manifesto/docs/CLAIRVEILLANCE.md)**
+**[Le Manifeste de la Clairveillance : Pour une Politique Néguentropique](https://axelduret.github.io/clairveillance-manifesto/docs/CLAIRVEILLANCE)**
 
 Ce document développe comment les principes néguentropiques peuvent être transposés à l'échelle sociétale, en détaillant les trois Contrats et une dynamique d'apprentissage continu pour nos institutions.
 
