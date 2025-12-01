@@ -270,27 +270,101 @@ graph TD
 
 **Implémentation technique** :
 
-```python
-# Feature Store - Définition Canonique
-@feature(
-    name="customer_activity_30d",
-    description="Activité client sur 30 jours glissants",
-    owner="data_platform_team@company.com"
-)
-def calculate_activity(user_id: str, timestamp: datetime) -> float:
-    """
-    DÉFINITION CONTRACTUELLE (approuvée par Marketing, Data Science, Produit):
+```php
+<?php
 
-    Période : 30 jours glissants avant timestamp
-    Événements : achats (poids 0.7) + connexions (poids 0.3)
-    Exclusions : activité bot, transactions test
+declare(strict_types=1);
 
-    Cette définition est LA référence unique.
-    Toute modification nécessite validation collective via PR.
-    """
-    purchases = get_purchases(user_id, timestamp, window_days=30)
-    logins = get_logins(user_id, timestamp, window_days=30)
-    return 0.7 * normalize(purchases) + 0.3 * normalize(logins)
+namespace Domain\Feature;
+
+use Domain\ValueObject\{UserId, ActivityScore, DateTimeRange};
+use Domain\Collection\{PurchaseCollection, LoginCollection};
+
+/**
+ * Feature Store - Définition Canonique
+ *
+ * DÉFINITION CONTRACTUELLE (approuvée par Marketing, Data Science, Produit):
+ *
+ * Période : 30 jours glissants avant timestamp
+ * Événements : achats (poids 0.7) + connexions (poids 0.3)
+ * Exclusions : activité bot, transactions test
+ *
+ * Cette définition est LA référence unique.
+ * Toute modification nécessite validation collective via PR.
+ */
+#[Feature(
+    name: 'customer_activity_30d',
+    description: 'Activité client sur 30 jours glissants',
+    owner: 'data_platform_team@company.com',
+    version: '2.0'
+)]
+readonly class CustomerActivityFeature
+{
+    private const PURCHASE_WEIGHT = 0.7;
+    private const LOGIN_WEIGHT = 0.3;
+    private const WINDOW_DAYS = 30;
+
+    public function __construct(
+        private PurchaseRepositoryInterface $purchaseRepository,
+        private LoginRepositoryInterface $loginRepository,
+        private ActivityNormalizerInterface $normalizer
+    ) {}
+
+    public function calculate(
+        UserId $userId,
+        \DateTimeImmutable $timestamp
+    ): ActivityScore {
+        $period = DateTimeRange::fromDays(
+            end: $timestamp,
+            days: self::WINDOW_DAYS
+        );
+
+        $purchases = $this->purchaseRepository->findByUserAndPeriod(
+            userId: $userId,
+            period: $period,
+            excludeBots: true,
+            excludeTests: true
+        );
+
+        $logins = $this->loginRepository->findByUserAndPeriod(
+            userId: $userId,
+            period: $period,
+            excludeBots: true
+        );
+
+        $normalizedPurchases = $this->normalizer->normalize($purchases);
+        $normalizedLogins = $this->normalizer->normalize($logins);
+
+        $score = self::PURCHASE_WEIGHT * $normalizedPurchases
+               + self::LOGIN_WEIGHT * $normalizedLogins;
+
+        return ActivityScore::fromFloat($score);
+    }
+}
+
+interface PurchaseRepositoryInterface
+{
+    public function findByUserAndPeriod(
+        UserId $userId,
+        DateTimeRange $period,
+        bool $excludeBots,
+        bool $excludeTests
+    ): PurchaseCollection;
+}
+
+interface LoginRepositoryInterface
+{
+    public function findByUserAndPeriod(
+        UserId $userId,
+        DateTimeRange $period,
+        bool $excludeBots
+    ): LoginCollection;
+}
+
+interface ActivityNormalizerInterface
+{
+    public function normalize(PurchaseCollection|LoginCollection $collection): float;
+}
 ```
 
 **Effets mesurables** :
@@ -311,30 +385,203 @@ def calculate_activity(user_id: str, timestamp: datetime) -> float:
 
 **Implémentation technique** :
 
-```python
-# Model Registry - Enregistrement avec Contrat de Valeur
-registry.register_model(
-    model=churn_predictor_v2,
-    name="churn_prediction",
-    version="2.0",
+```php
+<?php
 
-    # CONTRAT DE VALEUR OBLIGATOIRE
-    business_impact={
-        "metric": "customer_retention_rate",
-        "baseline": 0.85,              # Taux actuel
-        "target": 0.88,                # Objectif (+3%)
-        "measurement_period": "30_days",
-        "rollback_threshold": 0.84     # Rollback si < baseline
-    },
+declare(strict_types=1);
 
-    # Justification business obligatoire
-    rationale="""
-    Ce modèle améliore la détection précoce du churn de 10%.
-    Impact attendu : +3% rétention via campagnes ciblées.
-    Return on Investment estimé : 450K€/an (économie sur churn évité).
-    Coût maintenance : -2h/semaine vs v1 (simplification).
-    """
-)
+namespace Domain\Model;
+
+use Domain\ValueObject\{ModelId, ModelVersion};
+
+readonly class BusinessImpact
+{
+    public function __construct(
+        public string $metric,
+        public float $baseline,
+        public float $target,
+        public string $measurementPeriod,
+        public float $rollbackThreshold,
+        public string $rationale
+    ) {
+        if ($target <= $baseline) {
+            throw new \DomainException('Target must be greater than baseline');
+        }
+        if ($rollbackThreshold >= $baseline) {
+            throw new \DomainException('Rollback threshold must be lower than baseline');
+        }
+    }
+
+    public function hasAchievedTarget(float $currentValue): bool
+    {
+        return $currentValue >= $this->target;
+    }
+
+    public function shouldRollback(float $currentValue): bool
+    {
+        return $currentValue < $this->rollbackThreshold;
+    }
+}
+
+readonly class ModelRegistration
+{
+    public function __construct(
+        public ModelId $modelId,
+        public string $name,
+        public ModelVersion $version,
+        public BusinessImpact $businessImpact,
+        public string $huggingFaceModelId,
+        public \DateTimeImmutable $registeredAt
+    ) {}
+
+    public function evaluatePerformance(float $currentMetricValue): ModelEvaluation
+    {
+        return new ModelEvaluation(
+            modelId: $this->modelId,
+            version: $this->version,
+            currentValue: $currentMetricValue,
+            targetAchieved: $this->businessImpact->hasAchievedTarget($currentMetricValue),
+            shouldRollback: $this->businessImpact->shouldRollback($currentMetricValue),
+            evaluatedAt: new \DateTimeImmutable()
+        );
+    }
+}
+
+readonly class ModelEvaluation
+{
+    public function __construct(
+        public ModelId $modelId,
+        public ModelVersion $version,
+        public float $currentValue,
+        public bool $targetAchieved,
+        public bool $shouldRollback,
+        public \DateTimeImmutable $evaluatedAt
+    ) {}
+}
+
+interface ModelRepositoryInterface
+{
+    public function save(ModelRegistration $registration): ModelRegistration;
+    public function findById(ModelId $modelId): ?ModelRegistration;
+}
+
+interface ExternalModelValidatorInterface
+{
+    public function isAvailable(string $huggingFaceModelId): bool;
+}
+
+namespace Application\UseCase;
+
+use Domain\Model\{ModelRegistration, ModelRepositoryInterface, ExternalModelValidatorInterface, BusinessImpact};
+use Domain\ValueObject\{ModelId, ModelVersion};
+
+readonly class RegisterModelCommand
+{
+    public function __construct(
+        public string $modelId,
+        public string $name,
+        public string $version,
+        public string $metric,
+        public float $baseline,
+        public float $target,
+        public string $measurementPeriod,
+        public float $rollbackThreshold,
+        public string $rationale,
+        public string $huggingFaceModelId
+    ) {}
+}
+
+readonly class RegisterModelUseCase
+{
+    public function __construct(
+        private ModelRepositoryInterface $repository,
+        private ExternalModelValidatorInterface $validator
+    ) {}
+
+    public function execute(RegisterModelCommand $command): ModelRegistration
+    {
+        if (!$this->validator->isAvailable($command->huggingFaceModelId)) {
+            throw new \DomainException(
+                "Model '{$command->huggingFaceModelId}' not available"
+            );
+        }
+
+        $businessImpact = new BusinessImpact(
+            metric: $command->metric,
+            baseline: $command->baseline,
+            target: $command->target,
+            measurementPeriod: $command->measurementPeriod,
+            rollbackThreshold: $command->rollbackThreshold,
+            rationale: $command->rationale
+        );
+
+        $registration = new ModelRegistration(
+            modelId: new ModelId($command->modelId),
+            name: $command->name,
+            version: new ModelVersion($command->version),
+            businessImpact: $businessImpact,
+            huggingFaceModelId: $command->huggingFaceModelId,
+            registeredAt: new \DateTimeImmutable()
+        );
+
+        return $this->repository->save($registration);
+    }
+}
+
+namespace Infrastructure\HuggingFace;
+
+use Domain\Model\ExternalModelValidatorInterface;
+
+readonly class HuggingFaceValidator implements ExternalModelValidatorInterface
+{
+    private const BASE_URL = 'https://api-inference.huggingface.co/models/';
+
+    public function __construct(
+        private string $apiKey,
+        private \Psr\Http\Client\ClientInterface $httpClient
+    ) {}
+
+    public function isAvailable(string $huggingFaceModelId): bool
+    {
+        try {
+            $request = new \Psr\Http\Message\Request(
+                'GET',
+                self::BASE_URL . $huggingFaceModelId,
+                ['Authorization' => 'Bearer ' . $this->apiKey]
+            );
+
+            $response = $this->httpClient->sendRequest($request);
+            return $response->getStatusCode() === 200;
+        } catch (\Throwable) {
+            return false;
+        }
+    }
+}
+
+readonly class ChurnPredictionService
+{
+    public function __construct(
+        private string $apiKey,
+        private \Psr\Http\Client\ClientInterface $httpClient,
+        private string $modelId = 'distilbert-base-uncased-finetuned-churn'
+    ) {}
+
+    public function predict(string $customerData): array
+    {
+        $request = new \Psr\Http\Message\Request(
+            'POST',
+            'https://api-inference.huggingface.co/models/' . $this->modelId,
+            [
+                'Authorization' => 'Bearer ' . $this->apiKey,
+                'Content-Type' => 'application/json'
+            ],
+            json_encode(['inputs' => $customerData])
+        );
+
+        $response = $this->httpClient->sendRequest($request);
+        return json_decode($response->getBody()->getContents(), true);
+    }
+}
 ```
 
 **Effets mesurables** :
@@ -355,44 +602,159 @@ registry.register_model(
 
 **Implémentation technique** :
 
-```python
-# Drift Monitoring - Contrat de Validité
-monitoring_config = {
-    "model": "churn_prediction_v2",
+```php
+<?php
 
-    # SEUILS D'ALERTE (définis collectivement avec stakeholders)
-    "thresholds": {
-        "data_drift": {
-            "metric": "Population Stability Index",  # Population Stability Index
-            "warning": 0.1,
-            "critical": 0.2,
-            "action_warning": "alert_data_team",
-            "action_critical": "trigger_retraining_pipeline"
-        },
-        "concept_drift": {
-            "metric": "accuracy_drop",
-            "warning": 0.03,  # -3%
-            "critical": 0.05,  # -5%
-            "action_critical": "freeze_deployment_and_investigate"
-        },
-        "performance_drift": {
-            "metric": "business_metric_drop",
-            "warning": 0.01,  # -1% rétention
-            "critical": 0.02,  # -2% rétention
-            "action_critical": "automatic_rollback"
+declare(strict_types=1);
+
+namespace Application\Monitoring;
+
+use Domain\Drift\{DriftDetector, DriftThreshold, DriftStatus};
+use Domain\ValueObject\ModelId;
+
+enum AlertLevel: string
+{
+    case OK = 'ok';
+    case WARNING = 'warning';
+    case CRITICAL = 'critical';
+}
+
+enum DriftType: string
+{
+    case DATA = 'data_drift';
+    case CONCEPT = 'concept_drift';
+    case PERFORMANCE = 'performance_drift';
+}
+
+readonly class ThresholdConfig
+{
+    public function __construct(
+        public DriftType $type,
+        public string $metric,
+        public float $warningThreshold,
+        public float $criticalThreshold,
+        public string $warningAction,
+        public string $criticalAction
+    ) {}
+}
+
+readonly class DriftDetectionResult
+{
+    public function __construct(
+        public AlertLevel $status,
+        public float $value,
+        public DriftType $type,
+        public \DateTimeImmutable $detectedAt,
+        public ?string $actionTriggered = null
+    ) {}
+}
+
+readonly class MonitoringConfiguration
+{
+    /** @param array<ThresholdConfig> $thresholds */
+    public function __construct(
+        public ModelId $modelId,
+        public array $thresholds,
+        public ReportingConfig $reporting
+    ) {}
+
+    public static function forChurnPrediction(): self
+    {
+        return new self(
+            modelId: new ModelId('churn_prediction_v2'),
+            thresholds: [
+                new ThresholdConfig(
+                    type: DriftType::DATA,
+                    metric: 'PSI',  // Population Stability Index
+                    warningThreshold: 0.1,
+                    criticalThreshold: 0.2,
+                    warningAction: 'alert_data_team',
+                    criticalAction: 'trigger_retraining_pipeline'
+                ),
+                new ThresholdConfig(
+                    type: DriftType::CONCEPT,
+                    metric: 'accuracy_drop',
+                    warningThreshold: 0.03,  // -3%
+                    criticalThreshold: 0.05,  // -5%
+                    warningAction: 'alert_data_team',
+                    criticalAction: 'freeze_deployment_and_investigate'
+                ),
+                new ThresholdConfig(
+                    type: DriftType::PERFORMANCE,
+                    metric: 'business_metric_drop',
+                    warningThreshold: 0.01,  // -1% rétention
+                    criticalThreshold: 0.02,  // -2% rétention
+                    warningAction: 'alert_business_team',
+                    criticalAction: 'automatic_rollback'
+                )
+            ],
+            reporting: new ReportingConfig(
+                dashboardUrl: 'https://monitoring.company.com/churn-model',
+                stakeholders: [
+                    'data_team@company.com',
+                    'product_team@company.com',
+                    'business_team@company.com'
+                ],
+                frequency: ReportingFrequency::DAILY,
+                escalationPolicy: 'PagerDuty on critical'
+            )
+        );
+    }
+}
+
+readonly class DriftMonitoringService
+{
+    public function __construct(
+        private MonitoringConfiguration $config,
+        private DriftDetectorFactory $detectorFactory,
+        private AlertDispatcher $alertDispatcher,
+        private MetricsRepository $metricsRepository
+    ) {}
+
+    public function checkDrift(
+        array $currentData,
+        array $referenceData
+    ): DriftDetectionResult {
+        foreach ($this->config->thresholds as $threshold) {
+            $detector = $this->detectorFactory->create($threshold->type);
+            $value = $detector->calculate($currentData, $referenceData);
+
+            $result = match (true) {
+                $value >= $threshold->criticalThreshold => new DriftDetectionResult(
+                    status: AlertLevel::CRITICAL,
+                    value: $value,
+                    type: $threshold->type,
+                    detectedAt: new \DateTimeImmutable(),
+                    actionTriggered: $threshold->criticalAction
+                ),
+                $value >= $threshold->warningThreshold => new DriftDetectionResult(
+                    status: AlertLevel::WARNING,
+                    value: $value,
+                    type: $threshold->type,
+                    detectedAt: new \DateTimeImmutable(),
+                    actionTriggered: $threshold->warningAction
+                ),
+                default => new DriftDetectionResult(
+                    status: AlertLevel::OK,
+                    value: $value,
+                    type: $threshold->type,
+                    detectedAt: new \DateTimeImmutable()
+                )
+            };
+
+            if ($result->status !== AlertLevel::OK) {
+                $this->alertDispatcher->dispatch($result);
+                $this->metricsRepository->save($result);
+                return $result;
+            }
         }
-    },
 
-    # TRANSPARENCE : rapports publics accessibles à tous
-    "reporting": {
-        "dashboard_url": "https://monitoring.company.com/churn-model",
-        "stakeholders": [
-            "data_team@company.com",
-            "product_team@company.com",
-            "business_team@company.com"
-        ],
-        "frequency": "daily",
-        "escalation_policy": "PagerDuty on critical"
+        return new DriftDetectionResult(
+            status: AlertLevel::OK,
+            value: 0.0,
+            type: DriftType::DATA,
+            detectedAt: new \DateTimeImmutable()
+        );
     }
 }
 ```
@@ -452,32 +814,206 @@ graph TD
 
 **Implémentation** :
 
-```python
-# Event Log - Mémoire Événementielle
-event_log = {
-    "timestamp": "2024-03-20T14:30:00Z",
-    "event_type": "model_deployment",
-    "model": {
-        "name": "churn_prediction",
-        "version": "2.1"
-    },
+```php
+<?php
 
-    # HYPOTHÈSES EXPLICITES
-    "hypotheses": [
-        "L'ensemble model réduira les faux positifs de 15%",
-        "La rétention clients augmentera de 3% sous 30 jours",
-        "Le coût compute restera < +10% vs v2.0"
-    ],
+declare(strict_types=1);
 
-    # MÉTRIQUES DE SUCCÈS
-    "success_criteria": {
-        "retention_rate": {"baseline": 0.85, "target": 0.88},
-        "false_positive_rate": {"baseline": 0.22, "target": 0.18},
-        "compute_cost_daily": {"baseline": 450, "target": 495}
-    },
+namespace Domain\Event;
 
-    # VALIDATION CHECKPOINTS
-    "validation_dates": ["2024-04-20", "2024-06-20", "2024-09-20"]
+use Domain\ValueObject\{ModelId, ModelVersion};
+
+readonly class SuccessCriterion
+{
+    public function __construct(
+        public string $name,
+        public float $baseline,
+        public float $target
+    ) {}
+}
+
+readonly class ModelHypothesis
+{
+    public function __construct(
+        public string $description,
+        public ?float $expectedImpact = null,
+        public ?string $measurementUnit = null
+    ) {}
+}
+
+readonly class ModelDeployedEvent
+{
+    /**
+     * @param array<ModelHypothesis> $hypotheses
+     * @param array<SuccessCriterion> $successCriteria
+     * @param array<\DateTimeImmutable> $validationCheckpoints
+     */
+    public function __construct(
+        public string $eventId,
+        public \DateTimeImmutable $occurredAt,
+        public ModelId $modelId,
+        public ModelVersion $version,
+        public string $huggingFaceModel,
+        public array $hypotheses,
+        public array $successCriteria,
+        public array $validationCheckpoints,
+        public string $deployedBy
+    ) {}
+
+    public static function create(
+        ModelId $modelId,
+        ModelVersion $version,
+        string $huggingFaceModel,
+        array $hypotheses,
+        array $successCriteria,
+        array $validationCheckpoints,
+        string $deployedBy
+    ): self {
+        return new self(
+            eventId: \Ramsey\Uuid\Uuid::uuid4()->toString(),
+            occurredAt: new \DateTimeImmutable(),
+            modelId: $modelId,
+            version: $version,
+            huggingFaceModel: $huggingFaceModel,
+            hypotheses: $hypotheses,
+            successCriteria: $successCriteria,
+            validationCheckpoints: $validationCheckpoints,
+            deployedBy: $deployedBy
+        );
+    }
+}
+
+interface EventStoreInterface
+{
+    public function append(ModelDeployedEvent $event): void;
+}
+
+interface EventDispatcherInterface
+{
+    public function dispatch(ModelDeployedEvent $event): void;
+}
+
+interface ExternalModelValidatorInterface
+{
+    public function isAvailable(string $modelId): bool;
+}
+
+namespace Application\Command;
+
+use Domain\Event\{ModelDeployedEvent, EventStoreInterface, EventDispatcherInterface, ExternalModelValidatorInterface, ModelHypothesis, SuccessCriterion};
+use Domain\ValueObject\{ModelId, ModelVersion};
+
+readonly class LogModelDeploymentCommand
+{
+    public function __construct(
+        public ModelId $modelId,
+        public ModelVersion $version,
+        public string $huggingFaceModel,
+        public string $deployedBy
+    ) {}
+}
+
+readonly class LogModelDeploymentHandler
+{
+    public function __construct(
+        private EventStoreInterface $eventStore,
+        private ExternalModelValidatorInterface $modelValidator,
+        private EventDispatcherInterface $eventDispatcher
+    ) {}
+
+    public function handle(LogModelDeploymentCommand $command): ModelDeployedEvent
+    {
+        $hypotheses = [
+            new ModelHypothesis(
+                'L\'ensemble model réduira les faux positifs de 15%',
+                expectedImpact: 15.0,
+                measurementUnit: 'percentage'
+            ),
+            new ModelHypothesis(
+                'La rétention clients augmentera de 3% sous 30 jours',
+                expectedImpact: 3.0,
+                measurementUnit: 'percentage'
+            ),
+            new ModelHypothesis(
+                'Le coût compute restera < +10% vs v2.0',
+                expectedImpact: 10.0,
+                measurementUnit: 'percentage'
+            )
+        ];
+
+        $successCriteria = [
+            new SuccessCriterion(
+                name: 'retention_rate',
+                baseline: 0.85,
+                target: 0.88
+            ),
+            new SuccessCriterion(
+                name: 'false_positive_rate',
+                baseline: 0.22,
+                target: 0.18
+            ),
+            new SuccessCriterion(
+                name: 'compute_cost_daily',
+                baseline: 450.0,
+                target: 495.0
+            )
+        ];
+
+        $validationCheckpoints = [
+            new \DateTimeImmutable('2024-04-20'),
+            new \DateTimeImmutable('2024-06-20'),
+            new \DateTimeImmutable('2024-09-20')
+        ];
+
+        if (!$this->modelValidator->isAvailable($command->huggingFaceModel)) {
+            throw new \DomainException(
+                "Modèle Hugging Face '{$command->huggingFaceModel}' non disponible"
+            );
+        }
+
+        $event = ModelDeployedEvent::create(
+            modelId: $command->modelId,
+            version: $command->version,
+            huggingFaceModel: $command->huggingFaceModel,
+            hypotheses: $hypotheses,
+            successCriteria: $successCriteria,
+            validationCheckpoints: $validationCheckpoints,
+            deployedBy: $command->deployedBy
+        );
+
+        $this->eventStore->append($event);
+        $this->eventDispatcher->dispatch($event);
+
+        return $event;
+    }
+}
+
+namespace Infrastructure\HuggingFace;
+
+use Domain\Event\ExternalModelValidatorInterface;
+
+readonly class HuggingFaceModelValidator implements ExternalModelValidatorInterface
+{
+    public function __construct(
+        private string $apiKey,
+        private \Psr\Http\Client\ClientInterface $httpClient
+    ) {}
+
+    public function isAvailable(string $modelId): bool
+    {
+        try {
+            $request = new \Psr\Http\Message\Request(
+                'GET',
+                'https://api-inference.huggingface.co/models/' . $modelId,
+                ['Authorization' => 'Bearer ' . $this->apiKey]
+            );
+
+            $response = $this->httpClient->sendRequest($request);
+            return $response->getStatusCode() === 200;
+        } catch (\Throwable) {
+            return false;
+        }
+    }
 }
 ```
 
